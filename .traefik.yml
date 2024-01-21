@@ -1,8 +1,10 @@
 displayName: Block Path
 summary: Blocks HTTP requests with a path matching the configured regex.
 type: middleware
-import: github.com/traefik/plugin-blockpath
+import: github.com/kaedwen/plugin-blockpath
 compatibility: TODO
 testData:
-  Regex:
-    - "^/foo(.*)"
+  Allows:
+    - "^/whitelistes/(.*)"
+  Blocks:
+    - ".*"

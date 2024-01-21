@@ -34,7 +34,8 @@ and uses the `blockpath` middleware plugin to block all HTTP requests with a pat
 # Block all paths starting with /foo
 [http.middlewares]
   [http.middlewares.block-foo.plugin.blockpath]
-    regex = ["^/foo(.*)"]
+    allows = ["^/whitelisted(.*)"]
+    blocks = [".*"]
 
 [http.services]
   [http.services.my-service]

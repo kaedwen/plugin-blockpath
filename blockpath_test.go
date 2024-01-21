@@ -10,26 +10,30 @@ import (
 
 func TestNew(t *testing.T) {
 	tests := []struct {
-		desc    string
-		regexps []string
-		expErr  bool
+		desc   string
+		allows []string
+		blocks []string
+		expErr bool
 	}{
 		{
-			desc:    "should return no error",
-			regexps: []string{`^/foo/(.*)`},
-			expErr:  false,
+			desc:   "should return no error",
+			allows: nil,
+			blocks: []string{`^/foo/(.*)`},
+			expErr: false,
 		},
 		{
-			desc:    "should return an error",
-			regexps: []string{"*"},
-			expErr:  true,
+			desc:   "should return an error",
+			allows: nil,
+			blocks: []string{"*"},
+			expErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			cfg := &Config{
-				Regex: test.regexps,
+				Allows: test.allows,
+				Blocks: test.blocks,
 			}
 
 			if _, err := New(context.Background(), nil, cfg, "name"); test.expErr && err == nil {
@@ -42,28 +46,32 @@ func TestNew(t *testing.T) {
 func TestServeHTTP(t *testing.T) {
 	tests := []struct {
 		desc          string
-		regexps       []string
+		allows        []string
+		blocks        []string
 		reqPath       string
 		expNextCall   bool
 		expStatusCode int
 	}{
 		{
 			desc:          "should return forbidden status",
-			regexps:       []string{"/test"},
+			allows:        nil,
+			blocks:        []string{"/test"},
 			reqPath:       "/test",
 			expNextCall:   false,
 			expStatusCode: http.StatusForbidden,
 		},
 		{
 			desc:          "should return forbidden status",
-			regexps:       []string{"/test", "/toto"},
+			allows:        nil,
+			blocks:        []string{"/test", "/toto"},
 			reqPath:       "/toto",
 			expNextCall:   false,
 			expStatusCode: http.StatusForbidden,
 		},
 		{
 			desc:          "should return ok status",
-			regexps:       []string{"/test", "/toto"},
+			allows:        nil,
+			blocks:        []string{"/test", "/toto"},
 			reqPath:       "/plop",
 			expNextCall:   true,
 			expStatusCode: http.StatusOK,
@@ -76,24 +84,51 @@ func TestServeHTTP(t *testing.T) {
 		},
 		{
 			desc:          "should return forbidden status",
-			regexps:       []string{`^/bar(.*)`},
+			allows:        nil,
+			blocks:        []string{`^/bar(.*)`},
 			reqPath:       "/bar/foo",
 			expNextCall:   false,
 			expStatusCode: http.StatusForbidden,
 		},
 		{
 			desc:          "should return forbidden status",
-			regexps:       []string{`^/bar(.*)`},
+			allows:        nil,
+			blocks:        []string{`^/bar(.*)`},
 			reqPath:       "/foo/bar",
 			expNextCall:   true,
 			expStatusCode: http.StatusOK,
+		},
+		{
+			desc:          "should return ok status",
+			allows:        []string{`^/foo/bar`},
+			blocks:        []string{`^/foo(.*)`},
+			reqPath:       "/foo/bar",
+			expNextCall:   true,
+			expStatusCode: http.StatusOK,
+		},
+		{
+			desc:          "should return ok status",
+			allows:        []string{`^/foo/bar`},
+			blocks:        []string{`.*`},
+			reqPath:       "/foo/bar",
+			expNextCall:   true,
+			expStatusCode: http.StatusOK,
+		},
+		{
+			desc:          "should return forbidden status",
+			allows:        []string{`^/foo/bar`},
+			blocks:        []string{`.*`},
+			reqPath:       "/test/bar",
+			expNextCall:   false,
+			expStatusCode: http.StatusForbidden,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			cfg := &Config{
-				Regex: test.regexps,
+				Allows: test.allows,
+				Blocks: test.blocks,
 			}
 
 			nextCall := false
